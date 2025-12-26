@@ -77,12 +77,13 @@ The script will create a CSV file named `{channel_name}_videos.csv` with the fol
 - **Title**: The video title
 - **Date**: Publication date in YYYY-MM-DD format
 - **URL**: Direct link to the video
+- **Status**: Track video status (defaults to "Not started")
 
 Example output:
 ```csv
-Title,Date,URL
-"Getting Started with Python","2024-01-15","https://www.youtube.com/watch?v=abc123"
-"Advanced Python Tips","2024-01-20","https://www.youtube.com/watch?v=def456"
+Title,Date,URL,Status
+"Getting Started with Python","2024-01-15","https://www.youtube.com/watch?v=abc123","Not started"
+"Advanced Python Tips","2024-01-20","https://www.youtube.com/watch?v=def456","Not started"
 ```
 
 ## API Quota Information

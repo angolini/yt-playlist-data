@@ -206,7 +206,7 @@ def save_to_csv(videos, channel_name):
 
     try:
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['Title', 'Date', 'URL']
+            fieldnames = ['Title', 'Date', 'URL', 'Status']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             writer.writeheader()
@@ -214,7 +214,8 @@ def save_to_csv(videos, channel_name):
                 writer.writerow({
                     'Title': video['title'],
                     'Date': video['date'],
-                    'URL': video['url']
+                    'URL': video['url'],
+                    'Status': 'Not started'
                 })
 
         return filename
