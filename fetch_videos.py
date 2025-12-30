@@ -359,7 +359,7 @@ def save_to_csv(videos, channel_name):
     try:
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
             fieldnames = ['Title', 'Date', 'URL', 'Status', 'Playlists']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_NONNUMERIC)
 
             writer.writeheader()
             for video in videos:
