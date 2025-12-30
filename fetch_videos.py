@@ -100,7 +100,7 @@ def get_uploads_playlist_id(youtube, channel_id):
         channel_id: Channel ID
 
     Returns:
-        Uploads playlist ID
+        Tuple of (uploads_playlist_id, channel_name, related_playlists)
     """
     try:
         request = youtube.channels().list(
@@ -114,12 +114,138 @@ def get_uploads_playlist_id(youtube, channel_id):
             sys.exit(1)
 
         channel_name = response['items'][0]['snippet']['title']
-        uploads_playlist_id = response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+        related_playlists = response['items'][0]['contentDetails']['relatedPlaylists']
+        uploads_playlist_id = related_playlists['uploads']
 
-        return uploads_playlist_id, channel_name
+        return uploads_playlist_id, channel_name, related_playlists
     except HttpError as e:
         print(f"Error fetching channel details: {e}")
         sys.exit(1)
+
+
+def get_all_playlists(youtube, channel_id):
+    """
+    Fetch all playlists for a channel with pagination
+
+    Args:
+        youtube: YouTube API client
+        channel_id: Channel ID
+
+    Returns:
+        List of tuples: [(playlist_id, playlist_title), ...]
+    """
+    playlists = []
+    next_page_token = None
+
+    try:
+        while True:
+            request = youtube.playlists().list(
+                part="snippet,contentDetails",
+                channelId=channel_id,
+                maxResults=50,
+                pageToken=next_page_token
+            )
+            response = request.execute()
+
+            for item in response['items']:
+                playlist_id = item['id']
+                playlist_title = item['snippet']['title']
+                playlists.append((playlist_id, playlist_title))
+
+            next_page_token = response.get('nextPageToken')
+            if not next_page_token:
+                break
+
+        return playlists
+    except HttpError as e:
+        print(f"Error fetching playlists: {e}")
+        return []
+
+
+def filter_custom_playlists(all_playlists, related_playlists):
+    """
+    Filter out system/automatic playlists
+
+    Args:
+        all_playlists: List of (playlist_id, playlist_title) tuples
+        related_playlists: Dict from contentDetails.relatedPlaylists
+
+    Returns:
+        List of custom playlists: [(playlist_id, playlist_title), ...]
+    """
+    # Get all system playlist IDs
+    system_playlist_ids = set(related_playlists.values())
+
+    # Filter out system playlists
+    custom_playlists = [
+        (pid, title) for pid, title in all_playlists
+        if pid not in system_playlist_ids
+    ]
+
+    return custom_playlists
+
+
+def build_video_playlist_mapping(youtube, custom_playlists):
+    """
+    Build mapping of video IDs to playlist names
+
+    Args:
+        youtube: YouTube API client
+        custom_playlists: List of (playlist_id, playlist_title) tuples
+
+    Returns:
+        Dict mapping video IDs to list of playlist names:
+        {video_id: [playlist_name1, playlist_name2, ...]}
+    """
+    video_playlist_map = {}
+
+    for playlist_id, playlist_title in custom_playlists:
+        next_page_token = None
+
+        try:
+            while True:
+                request = youtube.playlistItems().list(
+                    part="contentDetails",
+                    playlistId=playlist_id,
+                    maxResults=50,
+                    pageToken=next_page_token
+                )
+                response = request.execute()
+
+                for item in response['items']:
+                    video_id = item['contentDetails']['videoId']
+                    if video_id not in video_playlist_map:
+                        video_playlist_map[video_id] = []
+                    video_playlist_map[video_id].append(playlist_title)
+
+                next_page_token = response.get('nextPageToken')
+                if not next_page_token:
+                    break
+
+        except HttpError as e:
+            print(f"Warning: Could not fetch items for playlist '{playlist_title}': {e}")
+            continue
+
+    return video_playlist_map
+
+
+def augment_videos_with_playlists(videos, playlist_mapping):
+    """
+    Add playlist information to video dictionaries
+
+    Args:
+        videos: List of video dicts with title, date, url, video_id
+        playlist_mapping: Dict {video_id: [playlist_names]}
+
+    Returns:
+        Updated videos list with 'playlists' field added
+    """
+    for video in videos:
+        video_id = video.get('video_id', '')
+        playlist_names = playlist_mapping.get(video_id, [])
+        video['playlists'] = ', '.join(playlist_names)
+
+    return videos
 
 
 def fetch_all_videos(youtube, playlist_id):
@@ -164,6 +290,7 @@ def fetch_all_videos(youtube, playlist_id):
                 url = f"https://www.youtube.com/watch?v={video_id}"
 
                 videos.append({
+                    'video_id': video_id,
                     'title': title,
                     'date': date,
                     'url': url
@@ -231,7 +358,7 @@ def save_to_csv(videos, channel_name):
 
     try:
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['Title', 'Date', 'URL', 'Status']
+            fieldnames = ['Title', 'Date', 'URL', 'Status', 'Playlists']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             writer.writeheader()
@@ -240,7 +367,8 @@ def save_to_csv(videos, channel_name):
                     'Title': video['title'],
                     'Date': video['date'],
                     'URL': video['url'],
-                    'Status': 'Not started'
+                    'Status': 'Not started',
+                    'Playlists': video.get('playlists', '')
                 })
 
         return filename
@@ -284,9 +412,22 @@ def main():
     print(f"Channel ID: {channel_id}")
 
     # Get uploads playlist ID and channel name
-    uploads_playlist_id, channel_name = get_uploads_playlist_id(youtube, channel_id)
+    uploads_playlist_id, channel_name, related_playlists = get_uploads_playlist_id(youtube, channel_id)
     print(f"Channel name: {channel_name}")
     print(f"Uploads playlist ID: {uploads_playlist_id}\n")
+
+    # Fetch and filter playlists
+    print("Fetching playlists...")
+    all_playlists = get_all_playlists(youtube, channel_id)
+    custom_playlists = filter_custom_playlists(all_playlists, related_playlists)
+    print(f"Found {len(custom_playlists)} custom playlists")
+
+    # Build video-to-playlist mapping
+    if custom_playlists:
+        print("Building playlist mapping...")
+        playlist_mapping = build_video_playlist_mapping(youtube, custom_playlists)
+    else:
+        playlist_mapping = {}
 
     # Fetch all videos
     videos = fetch_all_videos(youtube, uploads_playlist_id)
@@ -294,6 +435,9 @@ def main():
     if not videos:
         print("No videos found on this channel")
         sys.exit(0)
+
+    # Augment videos with playlist information
+    videos = augment_videos_with_playlists(videos, playlist_mapping)
 
     # Save to CSV
     print("\nSaving to CSV...")
