@@ -243,7 +243,7 @@ def augment_videos_with_playlists(videos, playlist_mapping):
     for video in videos:
         video_id = video.get('video_id', '')
         playlist_names = playlist_mapping.get(video_id, [])
-        video['playlists'] = ', '.join(playlist_names)
+        video['playlists'] = ','.join(playlist_names)
 
     return videos
 
