@@ -1,14 +1,9 @@
 # Environment variables
 .env
 
-# Data folder (contains CSV files and tracking data)
-data/
-
-# Generated CSV files
+# Generated CSV files (but track those in data folder)
 *.csv
-
-# Claude Code artifacts
-.claude/
+!data/**/*.csv
 
 # Python
 __pycache__/

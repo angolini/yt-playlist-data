@@ -1,0 +1,4 @@
+# Tracked YouTube Channels
+# Format: YYYY-MM-DD | Channel Name | Channel ID | CSV Filename
+# This file keeps track of all channels that have been processed
+2025-12-30 | The Linux Foundation | UCfX55Sx5hEFjoC3cNs6mCUQ | data/csv_outputs/The_Linux_Foundation_videos.csv
