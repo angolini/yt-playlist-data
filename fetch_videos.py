@@ -317,7 +317,7 @@ def fetch_all_videos(youtube, playlist_id):
 
 def track_channel(channel_name, channel_id, csv_filename):
     """
-    Add channel to tracking file
+    Add or update channel in tracking file
 
     Args:
         channel_name: Name of the channel
@@ -329,10 +329,34 @@ def track_channel(channel_name, channel_id, csv_filename):
 
     tracking_file = 'data/tracked_channels.txt'
     timestamp = datetime.now().strftime('%Y-%m-%d')
+    new_entry = f"{timestamp} | {channel_name} | {channel_id} | {csv_filename}\n"
 
     try:
-        with open(tracking_file, 'a', encoding='utf-8') as f:
-            f.write(f"{timestamp} | {channel_name} | {channel_id} | {csv_filename}\n")
+        # Read existing entries
+        lines = []
+        channel_found = False
+
+        if os.path.exists(tracking_file):
+            with open(tracking_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    # Keep header and comment lines
+                    if line.startswith('#'):
+                        lines.append(line)
+                    # Check if this is the channel we're updating
+                    elif channel_id in line:
+                        lines.append(new_entry)
+                        channel_found = True
+                    else:
+                        lines.append(line)
+
+        # If channel not found, add as new entry
+        if not channel_found:
+            lines.append(new_entry)
+
+        # Write back to file
+        with open(tracking_file, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+
     except IOError as e:
         print(f"Warning: Could not update tracking file: {e}")
 
