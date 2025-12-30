@@ -188,6 +188,28 @@ def fetch_all_videos(youtube, playlist_id):
     return videos
 
 
+def track_channel(channel_name, channel_id, csv_filename):
+    """
+    Add channel to tracking file
+
+    Args:
+        channel_name: Name of the channel
+        channel_id: Channel ID
+        csv_filename: Name of the CSV file created
+    """
+    # Create data directory if it doesn't exist
+    os.makedirs('data', exist_ok=True)
+
+    tracking_file = 'data/tracked_channels.txt'
+    timestamp = datetime.now().strftime('%Y-%m-%d')
+
+    try:
+        with open(tracking_file, 'a', encoding='utf-8') as f:
+            f.write(f"{timestamp} | {channel_name} | {channel_id} | {csv_filename}\n")
+    except IOError as e:
+        print(f"Warning: Could not update tracking file: {e}")
+
+
 def save_to_csv(videos, channel_name):
     """
     Save videos to CSV file
@@ -199,10 +221,13 @@ def save_to_csv(videos, channel_name):
     Returns:
         Filename of the created CSV
     """
+    # Create data directory if it doesn't exist
+    os.makedirs('data/csv_outputs', exist_ok=True)
+
     # Create safe filename
     safe_name = re.sub(r'[^\w\s-]', '', channel_name)
     safe_name = re.sub(r'[-\s]+', '_', safe_name)
-    filename = f"{safe_name}_videos.csv"
+    filename = f"data/csv_outputs/{safe_name}_videos.csv"
 
     try:
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
@@ -274,7 +299,11 @@ def main():
     print("\nSaving to CSV...")
     filename = save_to_csv(videos, channel_name)
 
+    # Track this channel
+    track_channel(channel_name, channel_id, filename)
+
     print(f"\nSuccess! Saved {len(videos)} videos to: {filename}")
+    print(f"Channel tracked in: data/tracked_channels.txt")
 
 
 if __name__ == '__main__':

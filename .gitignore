@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+# Data folder (contains CSV files and tracking data)
+data/
+
 # Generated CSV files
 *.csv
 
