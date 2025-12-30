@@ -7,9 +7,15 @@ data/
 # Generated CSV files
 *.csv
 
+# Claude Code artifacts
+.claude/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+*.egg-info/
+dist/
+build/
