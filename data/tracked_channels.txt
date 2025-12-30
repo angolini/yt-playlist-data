@@ -2,3 +2,4 @@
 # Format: YYYY-MM-DD | Channel Name | Channel ID | CSV Filename
 # This file keeps track of all channels that have been processed
 2025-12-30 | The Linux Foundation | UCfX55Sx5hEFjoC3cNs6mCUQ | data/csv_outputs/The_Linux_Foundation_videos.csv
+2025-12-30 | Write the Docs | UCr019846MitZUEhc6apDdcQ | data/csv_outputs/Write_the_Docs_videos.csv
